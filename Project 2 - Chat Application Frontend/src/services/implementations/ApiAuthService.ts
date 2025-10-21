@@ -25,10 +25,12 @@ export class ApiAuthService implements AuthService {
   ): Promise<T> {
     // 1. Construct the full URL using this.baseUrl and endpoint
     const url = `${this.baseUrl}${endpoint}`;
+
     // 2. Set up default headers including 'Content-Type': 'application/json'
     const defaultHeaders = {
       'Content-Type': 'application/json',
     };  
+    
     // 4. Make the fetch request with the provided options
     const request: RequestInit = {
       headers: {
@@ -39,8 +41,10 @@ export class ApiAuthService implements AuthService {
       credentials: 'include',
       ...options
     };
+
     // 5. Handle non-ok responses by throwing an error with status and message
     const response = await fetch(url, request);
+
     if (!response.ok) {
       let errorMessage = 'HTTP error! status: ${response.status}';
       try {
@@ -50,6 +54,7 @@ export class ApiAuthService implements AuthService {
         // if response is not json
         errorMessage = response.statusText || errorMessage;
       }
+      throw new Error(errorMessage);
     }
     // 6. Return the parsed JSON response
 
@@ -57,8 +62,8 @@ export class ApiAuthService implements AuthService {
       return {} as T;
     }
 
-    return await response.json() as T;
-    // throw new Error('makeRequest method not implemented');
+
+    return response.json() as Promise<T>;
   }
 
   async login(username: string, password: string): Promise<User> {

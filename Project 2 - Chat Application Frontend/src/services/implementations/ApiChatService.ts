@@ -45,7 +45,7 @@ export class ApiChatService implements ChatService {
     const defaultHeaders = {
       'Content-Type': 'application/json',
       // 4. Add Authorization header with Bearer token if token exists
-      ...(token ? { Authorization: `Bearer ${token}` }: {}),
+      ...(token ? { 'Authorization': `Bearer ${token}` }: {}),
     };
 
     // 5. Make the fetch request with the provided options
@@ -57,7 +57,7 @@ export class ApiChatService implements ChatService {
       ...options
     };
     const response = await fetch(url, request);
-
+    
     // 6. Handle non-ok responses by throwing an error with status and message
     if (!response.ok) {
       let errorMessage = 'HTTP error! status: ${response.status}';
@@ -68,13 +68,14 @@ export class ApiChatService implements ChatService {
         // if response is not json
         errorMessage = response.statusText || errorMessage;
       }
+      throw new Error(errorMessage);
     }
     // 7. Return the parsed JSON response
     if (response.status === 204) {
       return {} as T;
     }
 
-    return await response.json() as T;
+    return response.json() as Promise<T>;
   }
 
   // Conversations
