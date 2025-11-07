@@ -29,8 +29,7 @@ class UserTest < ActiveSupport::TestCase
     user = User.new(
       username: "alice",
       password: "password",
-      password_confirmation: "password",
-      last_active_at: Time.current
+      password_confirmation: "password"
     )
 
     assert user.save, "ERROR: user was not saved"
