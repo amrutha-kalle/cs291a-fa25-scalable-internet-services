@@ -10,7 +10,21 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_07_214935) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_08_025856) do
+  create_table "conversations", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "assigned_expert_id"
+    t.datetime "created_at", null: false
+    t.bigint "initiator_id", null: false
+    t.datetime "last_message_at"
+    t.string "status", default: "waiting", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["assigned_expert_id"], name: "index_conversations_on_assigned_expert_id"
+    t.index ["initiator_id"], name: "index_conversations_on_initiator_id"
+    t.index ["last_message_at"], name: "index_conversations_on_last_message_at"
+    t.index ["status"], name: "index_conversations_on_status"
+  end
+
   create_table "expert_profiles", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.text "bio"
     t.datetime "created_at", null: false
@@ -39,5 +53,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_07_214935) do
     t.index ["username"], name: "index_users_on_username", unique: true
   end
 
+  add_foreign_key "conversations", "users", column: "assigned_expert_id"
+  add_foreign_key "conversations", "users", column: "initiator_id"
   add_foreign_key "expert_profiles", "users"
 end
