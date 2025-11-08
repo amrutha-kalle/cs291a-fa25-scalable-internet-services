@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  get "messages/index"
+  get "messages/create"
+  get "messages/mark_as_read"
 
   # AUTH ROUTES
   post '/auth/register', to: 'auth#register'

@@ -2,8 +2,7 @@ class Conversation < ApplicationRecord
   belongs_to :initiator, class_name: "User"
   belongs_to :assigned_expert, class_name: "User", optional: true
 
-  # TODO: add back once messages have been implemented
-  # has_many :messages, dependent: :destroy
+  has_many :messages, dependent: :destroy
 
   # validations
   validates :title, presence: true
@@ -30,6 +29,16 @@ class Conversation < ApplicationRecord
 
   def unassign_expert!
     update!(assigned_expert: nil, status: "waiting")
+  end
+
+  def unread_messages_count_for(user)
+    if user == initiator
+      messages.where(sender_role: 'expert', is_read: false).count
+    elsif user == assigned_expert
+      messages.where(sender_role: 'initiator', is_read: false).count
+    else
+      0
+    end
   end
 
 

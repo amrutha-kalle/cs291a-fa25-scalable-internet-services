@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_08_025856) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_08_220329) do
   create_table "conversations", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "assigned_expert_id"
     t.datetime "created_at", null: false
@@ -32,6 +32,18 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_08_025856) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["user_id"], name: "index_expert_profiles_on_user_id", unique: true
+  end
+
+  create_table "messages", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.text "content", null: false
+    t.bigint "conversation_id", null: false
+    t.datetime "created_at", null: false
+    t.boolean "is_read", default: false, null: false
+    t.bigint "sender_id", null: false
+    t.string "sender_role", null: false
+    t.datetime "updated_at", null: false
+    t.index ["conversation_id"], name: "index_messages_on_conversation_id"
+    t.index ["sender_id"], name: "index_messages_on_sender_id"
   end
 
   create_table "sessions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -56,4 +68,6 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_08_025856) do
   add_foreign_key "conversations", "users", column: "assigned_expert_id"
   add_foreign_key "conversations", "users", column: "initiator_id"
   add_foreign_key "expert_profiles", "users"
+  add_foreign_key "messages", "conversations"
+  add_foreign_key "messages", "users", column: "sender_id"
 end
