@@ -2,6 +2,17 @@ require "test_helper"
 
 class AuthControllerTest < ActionDispatch::IntegrationTest
 
+  test "POST /auth/register automatically creates expert profile" do
+    assert_difference([ "User.count", "ExpertProfile.count" ], 1) do
+      post "/auth/register", params: { username: "newexpert", password: "password" }
+    end
+    
+    assert_response :created
+
+    user = User.find_by(username: "newexpert")
+    assert_not_nil user.expert_profile
+  end
+
   test "POST /auth/register creates a new user and returns token" do
     post "/auth/register", params: { username: "test", password: "password" }
     assert_response :created
@@ -10,15 +21,7 @@ class AuthControllerTest < ActionDispatch::IntegrationTest
     assert response_data.key?("token")
   end
 
-  # test "POST /auth/register automatically creates expert profile" do
-  #   assert_difference([ "User.count", "ExpertProfile.count" ], 1) do
-  #     post "/auth/register", params: { username: "newexpert", password: "password" }
-  #   end
-  #   assert_response :created
 
-  #   user = User.find_by(username: "newexpert")
-  #   assert_not_nil user.expert_profile
-  # end
 
   test "POST /auth/login authenticates user and returns token" do
     user = User.create!(username: "test", password: "password")
