@@ -13,4 +13,8 @@ Rails.application.routes.draw do
   # EXPERT ROUTES
   get '/expert/profile', to: 'expert#get_profile'
   put '/expert/profile', to: 'expert#update_profile'
+
+
+  # CONVERSATION ROUTES
+  resources :conversations, only: [:index, :show, :create]
 end

@@ -10,6 +10,7 @@ class Conversation < ApplicationRecord
   validates :status, inclusion: {in: %w[waiting active resolved]}
 
   before_validation :set_defualt_status, on: :create
+  
   scope :for_user, ->(user) {
     where("initiator_id = ? OR assigned_expert_id = ?", user.id, user.id)
   }
