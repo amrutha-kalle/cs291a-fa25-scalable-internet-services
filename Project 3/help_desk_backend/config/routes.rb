@@ -13,6 +13,10 @@ Rails.application.routes.draw do
   # EXPERT ROUTES
   get '/expert/profile', to: 'expert#get_profile'
   put '/expert/profile', to: 'expert#update_profile'
+  get '/expert/queue', to: 'expert#queue'
+  post '/expert/conversations/:conversation_id/claim', to: 'expert#claim'
+  post '/expert/conversations/:conversation_id/unclaim', to: 'expert#unclaim'
+  get '/expert/assignments/history', to: 'expert#history'
 
 
   # CONVERSATION ROUTES

@@ -1,7 +1,8 @@
 class Conversation < ApplicationRecord
   belongs_to :initiator, class_name: "User"
   belongs_to :assigned_expert, class_name: "User", optional: true
-
+  
+  has_many :expert_assignments, dependent: :destroy
   has_many :messages, dependent: :destroy
 
   # validations
@@ -23,13 +24,16 @@ class Conversation < ApplicationRecord
     update(last_message_at: Time.current)
   end
 
-  def assigned_expert!(expert)
-    update!(assigned_expert: expert, status: 'active')
-  end
+  # def assign_expert!(expert)
+  #   expert_assignments.active.update_all(status: 'unassigned')
+  #   expert_assignments.create!(expert: expert, status: 'active', assigned_at: Time.current)
+  #   update!(assigned_expert: expert, status: 'active')
+  # end
 
-  def unassign_expert!
-    update!(assigned_expert: nil, status: "waiting")
-  end
+  # def unassign_expert!
+  #   update!(assigned_expert: nil, status: "waiting")
+  # end
+  # end
 
   def unread_messages_count_for(user)
     if user == initiator
