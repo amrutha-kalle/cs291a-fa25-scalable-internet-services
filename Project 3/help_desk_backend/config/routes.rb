@@ -1,7 +1,4 @@
 Rails.application.routes.draw do
-  get "messages/index"
-  get "messages/create"
-  get "messages/mark_as_read"
 
   # AUTH ROUTES
   post '/auth/register', to: 'auth#register'
@@ -20,4 +17,15 @@ Rails.application.routes.draw do
 
   # CONVERSATION ROUTES
   resources :conversations, only: [:index, :show, :create]
+
+  # MESSAGE ROUTES
+
+  # GET /conversations/:conversation_id/messages
+  resources :conversations, only: [] do
+    resources :messages, only: [:index]
+  end
+
+  post '/messages', to: 'messages#create'
+  put '/messages/:id/read', to: "messages#mark_as_read"
+  
 end
