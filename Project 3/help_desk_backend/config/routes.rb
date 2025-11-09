@@ -23,13 +23,15 @@ Rails.application.routes.draw do
   resources :conversations, only: [:index, :show, :create]
 
   # MESSAGE ROUTES
-
-  # GET /conversations/:conversation_id/messages
   resources :conversations, only: [] do
     resources :messages, only: [:index]
   end
-
   post '/messages', to: 'messages#create'
   put '/messages/:id/read', to: "messages#mark_as_read"
+
+  # UPDATE/POLLING ENDPOINTS ROUTES
+  get '/api/conversations/updates', to: 'updates#conversations'
+  get '/api/messages/updates', to: 'updates#messages'
+  get '/api/expert-queue/updates', to: 'updates#expert_queue'
   
 end
