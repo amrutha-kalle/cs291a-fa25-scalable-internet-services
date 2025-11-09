@@ -25,7 +25,7 @@ class ExpertController < ApplicationController
       return
     end
 
-    unless conversation.waiting?
+    unless conversation.status == 'waiting'
       render json: {error: "Conversation is not available for claiming"}, status: :unprocessable_entity
       return
     end
@@ -51,7 +51,7 @@ class ExpertController < ApplicationController
     end 
 
     assignment = conversation.expert_assignments.find_by(expert_id: current_user.id, status: 'active')
-    assigntment&.update!(status: 'unassigned')
+    assignment&.update!(status: 'unassigned')
     conversation.update!(assigned_expert_id: nil, status: 'waiting')
 
     render json: {success: true}, status: :ok
