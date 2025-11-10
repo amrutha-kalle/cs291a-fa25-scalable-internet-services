@@ -50,7 +50,6 @@ class UpdatesController < ApplicationController
 
   # GET /api/expert-queue/updates
   def expert_queue
-    Rails.logger.info "------------------RUNNING UPDATE EXPERT QUEUE----------------"
     expert = User.find_by(id: params[:expertId])
     
     unless expert&.expert_profile
@@ -59,28 +58,13 @@ class UpdatesController < ApplicationController
     end
     # since_time = parse_since(params[:since])
 
-    waiting_conversations = Conversation.waiting.includes(:initiator, :messages)
-    assigned_conversations = Conversation.active.assigned_to(expert).includes(:initiator, :messages)
-    # waiting_conversations = Conversation
-    #   .where(status: 'waiting')
-    #   .where("updated_at > ?", since_time)
-    #   .includes(:initiator, :assigned_expert, :messages)
-      
-    # assigned_conversations = current_user_jwt
-    #   .assigned_conversations
-    #   .where("updated_at > ?", since_time)
-    #   .includes(:initiator, :assigned_expert, :messages)
+    waiting_conversations = Conversation.waiting.includes(:initiator).where.not(initiator_id: expert.id).order(created_at: :desc).map{|conv| conversation_update_response(conv)}
+    assigned_conversations = Conversation.active.assigned_to(expert).includes(:initiator, :messages).order(updated_at: :desc).map{|conv| conversation_update_response(conv)}
 
-    # if params[:since].present?
-    #   since_time = Time.iso8601(params[:since])
-    #   waiting_conversations = waiting_conversations.where('conversations.updated_at > ?', since_time)
-    #   assigned_conversations = assigned_conversations.where('conversations.updated_at > ?', since_time)
-    # end
-
-    render json: {
-      waitingConversations: waiting_conversations.map { |conv| conversation_update_response(conv, expert) },
-      assignedConversations: assigned_conversations.map { |conv| conversation_update_response(conv, expert) }
-    }
+    render json: [{
+      waitingConversations: waiting_conversations,
+      assignedConversations: assigned_conversations
+    }]
   end
 
   private
@@ -93,25 +77,25 @@ class UpdatesController < ApplicationController
 
   def conversation_update_response(conversation)
     {
-      id: conversation.id.to_s,
+      id: conversation.id,
       title: conversation.title,
       status: conversation.status,
-      questionerId: conversation.initiator_id.to_s,
+      questionerId: conversation.initiator_id,
       questionerUsername: conversation.initiator.username,
-      assignedExpertId: conversation.assigned_expert_id&.to_s,
+      assignedExpertId: conversation.assigned_expert_id,
       assignedExpertUsername: conversation.assigned_expert&.username,
       createdAt: conversation.created_at&.iso8601,
       updatedAt: conversation.updated_at&.iso8601,
       lastMessageAt: conversation.last_message_at&.iso8601,
-      # unreadCount: unread_count_for_conversation(conversation, current_user_jwt)
+      unreadCount: 0
     }
   end
 
   def message_update_response(message)
     {
-      id: message.id.to_s,
-      conversationId: message.conversation_id.to_s,
-      senderId: message.sender_id.to_s,
+      id: message.id,
+      conversationId: message.conversation_id,
+      senderId: message.sender_id,
       senderUsername: message.sender.username,
       senderRole: message.sender_role,
       content: message.content,

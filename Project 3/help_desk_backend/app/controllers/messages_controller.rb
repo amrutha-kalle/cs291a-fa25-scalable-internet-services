@@ -1,6 +1,6 @@
 class MessagesController < ApplicationController
   before_action :authorize_jwt!
-  
+
   # GET /conversations/:conversation_id/messages
   def index
     conversation = Conversation.find_by(id: params[:conversation_id])
@@ -112,9 +112,9 @@ class MessagesController < ApplicationController
 
   def message_response(message)
     {
-      id: message.id.to_s,
-      conversationId: message.conversation_id.to_s,
-      senderId: message.sender_id.to_s,
+      id: message.id,
+      conversationId: message.conversation_id,
+      senderId: message.sender_id,
       senderUsername: message.sender.username,
       senderRole: message.sender_role,
       content: message.content,

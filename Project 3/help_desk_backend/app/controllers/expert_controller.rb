@@ -145,12 +145,12 @@ class ExpertController < ApplicationController
 
   def conversation_response(conversation)
     {
-      id: conversation.id.to_s,
+      id: conversation.id,
       title: conversation.title,
       status: conversation.status,
-      questionerId: conversation.initiator_id.to_s,
+      questionerId: conversation.initiator_id,
       questionerUsername: conversation.initiator.username,
-      assignedExpertId: conversation.assigned_expert_id&.to_s,
+      assignedExpertId: conversation.assigned_expert_id,
       assignedExpertUsername: conversation.assigned_expert&.username,
       createdAt: conversation.created_at&.iso8601,
       updatedAt: conversation.updated_at&.iso8601,
@@ -160,9 +160,9 @@ class ExpertController < ApplicationController
 
   def assignment_response(assignment)
     {
-      id: assignment.id.to_s,
-      conversationId: assignment.conversation_id.to_s,
-      expertId: assignment.expert_id.to_s,
+      id: assignment.id,
+      conversationId: assignment.conversation_id,
+      expertId: assignment.expert_id,
       status: assignment.status,
       assignedAt: assignment.assigned_at&.iso8601,
       resolvedAt: assignment.resolved_at&.iso8601,
