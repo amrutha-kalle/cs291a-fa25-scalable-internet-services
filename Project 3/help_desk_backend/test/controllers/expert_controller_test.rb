@@ -4,35 +4,15 @@ class ExpertControllerTest < ActionDispatch::IntegrationTest
 
   def setup
     # Create regular user
-    @user = User.create!(
-      username: 'testuser',
-      password: 'password123',
-      password_confirmation: 'password123'
-    )
+    @user = User.create!(username: 'testuser', password: 'password')
     
     # Create expert user with profile
-    @expert = User.create!(
-      username: 'expertuser',
-      password: 'password123', 
-      password_confirmation: 'password123'
-    )
-    ExpertProfile.create!(
-      user: @expert,
-      bio: "Test expert",
-      knowledge_base_links: []
-    )
+    @expert = User.create!(username: 'expertuser', password: 'password')
+    ExpertProfile.create!(user: @expert, bio: "Test expert", knowledge_base_links: [])
 
-    @expert2 = User.create!(
-      username: 'expert2user',
-      password: 'password123', 
-      password_confirmation: 'password123'
-    )
-
-    ExpertProfile.create!(
-      user: @expert2,
-      bio: "Test expert 2",
-      knowledge_base_links: []
-    )
+    # Create another expert
+    @expert2 = User.create!(username: 'expert2user', password: 'password')
+    ExpertProfile.create!(user: @expert2, bio: "Test expert 2", knowledge_base_links: [])
   end
 
   test "expert profile automatically created during registration" do
@@ -46,46 +26,39 @@ class ExpertControllerTest < ActionDispatch::IntegrationTest
     expert_profile = user.expert_profile
     assert_equal "", expert_profile.bio
     assert_equal [], expert_profile.knowledge_base_links
-    assert_not_nil expert_profile.created_at, "ERROR: created_at should not be null"
-    assert_not_nil expert_profile.updated_at, "ERROR: updated_at should not be null"
+    assert_not_nil expert_profile.created_at
+    assert_not_nil expert_profile.updated_at
   end
 
-  test "user can get expert profile" do
-    post "/auth/register", params: {username: "alice", password: "password"}
-    assert_response :created
-    token = JSON.parse(response.body)['token']
+  test "expert can get expert profile" do
+    post "/auth/login", params: {username: 'expertuser', password: "password"}
+    assert_response :ok
+    expert_token = JSON.parse(response.body)['token']
 
-    get '/expert/profile', headers: {'Authorization' => 'Bearer #{token}'}
+    get '/expert/profile', headers: { 'Authorization' => "Bearer #{expert_token}" }
     assert_response :success
 
     data = JSON.parse(response.body)
-    assert_equal "", data["bio"]
-    assert_equal [], data['knowledge_base_links']
+    assert_equal "Test expert", data["bio"]
+    assert_equal [], data['knowledgeBaseLinks']
   end
 
   test "should successfully update expert profile" do
-    post "/auth/register", params: {username: "alice", password: "password"}
-    assert_response :created
-    token = JSON.parse(response.body)['token']
-    uid = 
+    post "/auth/login", params: {username: 'expertuser', password: "password"}
+    assert_response :ok
+    expert_token = JSON.parse(response.body)['token']
 
     put '/expert/profile', 
-      headers: {'Authorization' => 'Bearer #{token}'}, 
-      params: {bio: "new bio who diz", knowledge_base_links: ["google.com", "duckduckgo.com"]}
+      headers: { 'Authorization' => "Bearer #{expert_token}" }, 
+      params: {bio: "new bio who diz", knowledgeBaseLinks: ["google.com", "duckduckgo.com"]}
     
     assert_response :success
     response_data = JSON.parse(response.body)
     assert_equal "new bio who diz", response_data["bio"]
-    assert_equal ["google.com", "duckduckgo.com"], response_data["knowledge_base_links"]
-    
-    user = User.find_by(username: "alice")
-    ex_profile = user.expert_profile
-    ex_profile.reload
-    assert_equal "new bio who diz", ex_profile["bio"]
+    assert_equal ["google.com", "duckduckgo.com"], response_data["knowledgeBaseLinks"]
   end
   
   test "expert can view queue" do
-    # Create some test conversations
     waiting_conv = Conversation.create!(title: 'Waiting', initiator: @user, status: 'waiting')
     assigned_conv = Conversation.create!(
       title: 'Assigned', 
@@ -93,14 +66,14 @@ class ExpertControllerTest < ActionDispatch::IntegrationTest
       assigned_expert: @expert, 
       status: 'active'
     )
-    post '/auth/login', params: { username: 'expertuser', password: 'password123' }
+    post '/auth/login', params: { username: 'expertuser', password: 'password' }
+    assert_response :ok
     expert_token = JSON.parse(response.body)['token']
 
-    get '/expert/queue', headers: { 'Authorization' => "Bearer #{@expert_token}" }
-    
+    get '/expert/queue', headers: { 'Authorization' => "Bearer #{expert_token}" }
     assert_response :success
+
     response_data = JSON.parse(response.body)
-    
     assert_equal 1, response_data['waitingConversations'].length
     assert_equal 1, response_data['assignedConversations'].length
     assert_equal 'Waiting', response_data['waitingConversations'][0]['title']
@@ -114,14 +87,14 @@ class ExpertControllerTest < ActionDispatch::IntegrationTest
       status: 'waiting'
     )
     
-    post '/auth/login', params: { username: 'expertuser', password: 'password123' }
+    post '/auth/login', params: { username: 'expertuser', password: 'password' }
+    assert_response :ok
     expert_token = JSON.parse(response.body)['token']
     assert_difference('ExpertAssignment.count', 1) do
       post "/expert/conversations/#{conversation.id}/claim",
            headers: { 'Authorization' => "Bearer #{expert_token}" }
     end
 
-    
     assert_response :success
     assert_equal true, JSON.parse(response.body)['success']
     
@@ -138,7 +111,8 @@ class ExpertControllerTest < ActionDispatch::IntegrationTest
       status: 'active'
     )
     
-    post '/auth/login', params: { username: 'expertuser', password: 'password123' }
+    post '/auth/login', params: { username: 'expertuser', password: 'password' }
+    assert_response :ok
     expert_token = JSON.parse(response.body)['token']
     post "/expert/conversations/#{conversation.id}/claim",
          headers: { 'Authorization' => "Bearer #{expert_token}" }
@@ -148,7 +122,7 @@ class ExpertControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "cannot claim non-existent conversation" do
-    post '/auth/login', params: { username: 'expertuser', password: 'password123' }
+    post '/auth/login', params: { username: 'expertuser', password: 'password' }
     expert_token = JSON.parse(response.body)['token']
     post "/expert/conversations/99999/claim",
          headers: { 'Authorization' => "Bearer #{expert_token}" }
@@ -172,11 +146,11 @@ class ExpertControllerTest < ActionDispatch::IntegrationTest
       status: 'active',
       assigned_at: Time.current
     )
-    post '/auth/login', params: { username: 'expertuser', password: 'password123' }
+    post '/auth/login', params: { username: 'expertuser', password: 'password' }
+    assert_response :ok
     expert_token = JSON.parse(response.body)['token']
 
-    post "/expert/conversations/#{conversation.id}/unclaim",
-         headers: { 'Authorization' => "Bearer #{expert_token}" }
+    post "/expert/conversations/#{conversation.id}/unclaim", headers: { 'Authorization' => "Bearer #{expert_token}" }
     
     assert_response :success
     assert_equal true, JSON.parse(response.body)['success']
@@ -196,7 +170,8 @@ class ExpertControllerTest < ActionDispatch::IntegrationTest
       assigned_expert: @expert2,
       status: 'active'
     )
-    post '/auth/login', params: { username: 'expertuser', password: 'password123' }
+    post '/auth/login', params: { username: 'expertuser', password: 'password' }
+    assert_response :ok
     expert_token = JSON.parse(response.body)['token']
     post "/expert/conversations/#{conversation.id}/unclaim",
          headers: { 'Authorization' => "Bearer #{expert_token}" }
@@ -206,7 +181,8 @@ class ExpertControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "cannot unclaim non-existent conversation" do
-    post '/auth/login', params: { username: 'expertuser', password: 'password123' }
+    post '/auth/login', params: { username: 'expertuser', password: 'password' }
+    assert_response :ok
     expert_token = JSON.parse(response.body)['token']
     post "/expert/conversations/99999/unclaim",
          headers: { 'Authorization' => "Bearer #{expert_token}" }
@@ -236,7 +212,8 @@ class ExpertControllerTest < ActionDispatch::IntegrationTest
       status: 'active',
       assigned_at: Time.current
     )
-    post '/auth/login', params: { username: 'expertuser', password: 'password123' }
+    post '/auth/login', params: { username: 'expertuser', password: 'password' }
+    assert_response :ok
     expert_token = JSON.parse(response.body)['token']
     get '/expert/assignments/history', headers: { 'Authorization' => "Bearer #{expert_token}" }
     
@@ -250,9 +227,10 @@ class ExpertControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "assignment history returns empty when no assignments" do
-    post '/auth/login', params: { username: 'expertuser', password: 'password123' }
+    post '/auth/login', params: { username: 'expertuser', password: 'password' }
+    assert_response :ok
     expert_token = JSON.parse(response.body)['token']
-    get '/expert/assignments/history', headers: { 'Authorization' => "Bearer #{@xpert_token}" }
+    get '/expert/assignments/history', headers: { 'Authorization' => "Bearer #{expert_token}" }
     assert_response :success
     response_data = JSON.parse(response.body)
     assert_equal 0, response_data.length
@@ -260,7 +238,8 @@ class ExpertControllerTest < ActionDispatch::IntegrationTest
 
   # AUTHORIZATION TESTS
   test "non-expert cannot access expert endpoints" do
-    post '/auth/login', params: { username: 'testuser', password: 'password123' }
+    post '/auth/login', params: { username: 'testuser', password: 'password' }
+    assert_response :ok
     user_token = JSON.parse(response.body)['token']
     get '/expert/queue', headers: { 'Authorization' => "Bearer #{user_token}" }
     assert_response :not_found

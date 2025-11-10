@@ -24,28 +24,6 @@ class Conversation < ApplicationRecord
     update(last_message_at: Time.current)
   end
 
-  # def assign_expert!(expert)
-  #   expert_assignments.active.update_all(status: 'unassigned')
-  #   expert_assignments.create!(expert: expert, status: 'active', assigned_at: Time.current)
-  #   update!(assigned_expert: expert, status: 'active')
-  # end
-
-  # def unassign_expert!
-  #   update!(assigned_expert: nil, status: "waiting")
-  # end
-  # end
-
-  def unread_messages_count_for(user)
-    if user == initiator
-      messages.where(sender_role: 'expert', is_read: false).count
-    elsif user == assigned_expert
-      messages.where(sender_role: 'initiator', is_read: false).count
-    else
-      0
-    end
-  end
-
-
   private
   def set_defualt_status
     self.status ||= "waiting"

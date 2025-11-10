@@ -12,9 +12,6 @@ class User < ApplicationRecord
     # associations
     has_one :expert_profile, dependent: :destroy
 
-    # make expert profile after user is created
-    
-
     private
 
     def set_initial_last_active

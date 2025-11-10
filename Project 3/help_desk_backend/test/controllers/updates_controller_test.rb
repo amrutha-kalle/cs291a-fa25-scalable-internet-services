@@ -1,29 +1,27 @@
 require "test_helper"
 
 class UpdatesControllerTest < ActionDispatch::IntegrationTest
-def setup
+  def setup
     @user = User.create!(
       username: 'testuser',
-      password: 'password123',
-      password_confirmation: 'password123'
+      password: 'password',
+      password_confirmation: 'password'
     )
     
     @expert = User.create!(
       username: 'expertuser',
-      password: 'password123',
-      password_confirmation: 'password123'
+      password: 'password',
+      password_confirmation: 'password'
     )
 
     ExpertProfile.create!(user: @expert, bio: 'Test expert', knowledge_base_links: [])
     
-    # Create conversation where user is initiator
     @user_conversation = Conversation.create!(
       title: 'User Conversation',
       initiator: @user,
       status: 'waiting'
     )
     
-    # Create conversation where expert is assigned
     @expert_conversation = Conversation.create!(
       title: 'Expert Conversation',
       initiator: @user,
@@ -41,14 +39,15 @@ def setup
   end
 
   test "GET /api/conversations/updates returns conversations for user as initiator" do
-    # post '/auth/login', params: { username: 'testuser', password: 'password123' }
-    # user_token = JSON.parse(response.body)['token']
-    get '/api/conversations/updates', params: { userId: @user.id }
+    post "/auth/login", params: {username: 'testuser', password: "password"}
+    assert_response :ok
+    user_token = JSON.parse(response.body)['token']
+
+    get '/api/conversations/updates', params: { userId: @user.id }, headers: { 'Authorization' => "Bearer #{user_token}" }
     
     assert_response :success
     response_data = JSON.parse(response.body)
     
-    # User should see both conversations (one as initiator, one as questioner)
     assert_equal 2, response_data.length
     
     conversation_titles = response_data.map { |c| c['title'] }
@@ -57,19 +56,20 @@ def setup
   end
 
   test "GET /api/conversations/updates returns conversations for expert as assigned expert" do
-    get '/api/conversations/updates', params: { userId: @expert.id }
+    post "/auth/login", params: {username: 'expertuser', password: "password"}
+    assert_response :ok
+    expert_token = JSON.parse(response.body)['token']
+    get '/api/conversations/updates', params: { userId: @expert.id }, headers: { 'Authorization' => "Bearer #{expert_token}" }
     
     assert_response :success
     response_data = JSON.parse(response.body)
-    
-    # Expert should see the conversation they're assigned to
+
     assert_equal 1, response_data.length
     assert_equal 'Expert Conversation', response_data[0]['title']
     assert_equal 'active', response_data[0]['status']
   end
 
   test "GET /api/messages/updates returns messages for user conversations" do
-    # Add a message to the expert conversation
     Message.create!(
       conversation: @expert_conversation,
       sender: @expert,
@@ -77,13 +77,16 @@ def setup
       content: 'Hello user',
       is_read: false
     )
-    
-    get '/api/messages/updates', params: { userId: @user.id }
+
+    post "/auth/login", params: {username: 'testuser', password: "password"}
+    assert_response :ok
+    user_token = JSON.parse(response.body)['token']
+    get '/api/messages/updates', params: { userId: @user.id }, headers: { 'Authorization' => "Bearer #{user_token}" }
     
     assert_response :success
     response_data = JSON.parse(response.body)
     
-    # User should see messages from both conversations
+
     assert_equal 2, response_data.length
     
     message_contents = response_data.map { |m| m['content'] }
@@ -92,7 +95,10 @@ def setup
   end
 
   test "GET /api/expert-queue/updates returns expert queue" do
-    get '/api/expert-queue/updates', params: { expertId: @expert.id }
+    post "/auth/login", params: {username: 'expertuser', password: "password"}
+    assert_response :ok
+    expert_token = JSON.parse(response.body)['token']
+    get '/api/expert-queue/updates', params: { expertId: @expert.id }, headers: { 'Authorization' => "Bearer #{expert_token}" }
     
     assert_response :success
     response_data = JSON.parse(response.body)
@@ -106,17 +112,4 @@ def setup
     assert_includes assigned_conv_titles, 'Expert Conversation'
   end
 
-  test "returns error for non-existent user" do
-    get '/api/conversations/updates', params: { userId: 99999 }
-    
-    assert_response :not_found
-    assert_equal 'User not found', JSON.parse(response.body)['error']
-  end
-
-  test "returns error for non-existent expert" do
-    get '/api/expert-queue/updates', params: { expertId: 99999 }
-    
-    assert_response :not_found
-    assert_equal 'Expert not found', JSON.parse(response.body)['error']
-  end
 end

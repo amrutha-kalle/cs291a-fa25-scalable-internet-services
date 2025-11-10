@@ -1,10 +1,10 @@
 require "test_helper"
 
-class ConversationsControllerTest < ActionDispatch::IntegrationTest
-
+class ConversationsTest < ActionDispatch::IntegrationTest
   def setup
     @user = User.create!(username: "testuser", password: "password123")
     @token = JwtService.encode(@user)
+    post '/auth/login', params: {username: "testuser", passowrd: "password123"}
   end
 
   test "GET /conversations returns user's conversations" do
@@ -16,7 +16,7 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
 
   test "POST /conversations creates a new conversation" do
     post "/conversations",
-         params: { title: "Test Conversation" },
+         params: { title: "Test Conversation", initiator: @user },
          headers: { "Authorization" => "Bearer #{@token}" }
     assert_response :created
     assert_equal "Test Conversation", JSON.parse(response.body)["title"]
@@ -37,8 +37,8 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
     get "/conversations/#{conversation.id}", headers: { "Authorization" => "Bearer #{@token}" }
     assert_response :ok
     response_data = JSON.parse(response.body)
-    assert_equal conversation.id.to_s, response_data["id"]
-    assert_equal @user.id.to_s, response_data["questionerId"]
+    assert_equal conversation.id, response_data["id"]
+    assert_equal @user.id, response_data["questionerId"]
   end
 
   test "GET /conversations/:id requires user to own conversation" do
@@ -50,7 +50,7 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
 
   test "POST /conversations requires title" do
     post "/conversations",
-         params: {},
+         params: {initiator: @user},
          headers: { "Authorization" => "Bearer #{@token}" }
     assert_response :unprocessable_entity
     assert_includes JSON.parse(response.body)["errors"], "Title can't be blank"
@@ -102,5 +102,4 @@ class ConversationsControllerTest < ActionDispatch::IntegrationTest
     assert_equal @user.username, response_data["questionerUsername"]
     assert_nil response_data["assignedExpertUsername"]
   end
-
 end

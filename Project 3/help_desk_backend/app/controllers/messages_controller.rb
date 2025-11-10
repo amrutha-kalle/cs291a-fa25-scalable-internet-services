@@ -9,7 +9,6 @@ class MessagesController < ApplicationController
       render json: {error: "Conversation not found"}, status: :not_found
       return
     end
-    conversation.reload
     unless authorized_for_conversation?(conversation)
       render json: {error: "Not authorized"}, status: :forbidden
       return
@@ -25,14 +24,11 @@ class MessagesController < ApplicationController
       render json: {error: "Conversation not found"}, status: :not_found
       return
     end
-    conversation.reload
     unless authorized_for_conversation?(conversation)
       render json: {error: "Not authorized"}, status: :forbidden
       return
     end
 
-    
-    # update status if waiting and expert is assigned
     if conversation.status == "waiting" && conversation.assigned_expert
       conversation.update(status: "active")
     end
@@ -55,7 +51,6 @@ class MessagesController < ApplicationController
       render json: {error: "Message not found"}, status: :not_found
       return
     end
-    message.reload
     unless authorized_for_message?(message)
       render json: {error: 'Not authorized'}, status: :forbidden
       return
@@ -69,7 +64,6 @@ class MessagesController < ApplicationController
       render json: {error: "Conversation not found"}, status: :not_found
       return
     end
-    conversation.reload
     unless authorized_for_conversation?(conversation)
       render json: {error: "No authorized"}, status: forbidden
       return
@@ -91,13 +85,6 @@ class MessagesController < ApplicationController
   end
 
   def authorized_for_conversation?(conversation)
-    Rails.logger.info "Current_user id: #{current_user_jwt.id}"
-    Rails.logger.info "convo init id: #{conversation.initiator.id}"
-    if conversation.status == 'waiting'
-      Rails.logger.info "convo has no expert"
-    else
-      Rails.logger.info "convo expert id: #{conversation.assigned_expert.id}"
-    end
     conversation.initiator == current_user_jwt || conversation.assigned_expert == current_user_jwt
   end
 

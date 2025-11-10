@@ -3,7 +3,9 @@ class ConversationsController < ApplicationController
     before_action :authorize_jwt!
     
     def index
-        conversations = Conversation.for_user(current_user_jwt).includes(:initiator, :assigned_expert).order(created_at: :desc)
+        conversations = Conversation.for_user(current_user_jwt)
+                                    .includes(:initiator, :assigned_expert)
+                                    .order(created_at: :desc)
         render json: conversations.map{|conv| conversation_response(conv)}
     end
 
@@ -20,14 +22,7 @@ class ConversationsController < ApplicationController
             render json: {error: 'Conversation not found'}, status: :not_found
             return
         end
-        conversation.reload
         render json: conversation_response(conversation)
-        # conversation = Conversation.includes(:initiator, :assigned_expert).find(params[:id])
-        # if conversation
-        #     render json: conversation_response(conversation)
-        # else
-        #     render json: {error: "Conversation not found"}, status: :not_found
-        # end
     end
 
     # POST /conversations
@@ -47,7 +42,7 @@ class ConversationsController < ApplicationController
     private
   
     def conversation_params
-        params.require(:conversation).permit(:title)
+        params.permit(:title)
     end
     
     def conversation_response(conversation)

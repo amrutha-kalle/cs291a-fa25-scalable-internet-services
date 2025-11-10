@@ -5,7 +5,9 @@ class ExpertController < ApplicationController
   # GET /expert/queue
   def queue
     waiting_convos = Conversation.waiting.includes(:initiator, :messages)
-    active_convos = Conversation.active.where(assigned_expert_id: current_user_jwt.id).includes(:initiator, :messages, :assigned_expert)
+    active_convos = Conversation.active
+                                .where(assigned_expert_id: current_user_jwt.id)
+                                .includes(:initiator, :messages, :assigned_expert)
 
     render json: {
       waitingConversations: waiting_convos.map {|conv| conversation_response(conv)},
@@ -20,20 +22,13 @@ class ExpertController < ApplicationController
       render json: {error: 'Conversation not found'}, status: :not_found
       return
     end
-    conversation.reload
     if conversation.assigned_expert_id.present?
       render json: {error: "Conversation is already assigned to an expert"}, status: :unprocessable_entity
       return
     end
 
-    # unless conversation.initiator == 'waiting'
-    #   render json: {error: "Conversation is not available for claiming"}, status: :unprocessable_entity
-    #   return
-    # end
-
     ActiveRecord::Base.transaction do
       conversation.update!(assigned_expert: current_user_jwt, status: 'active')
-      conversation.reload
 
       ExpertAssignment.create!(conversation: conversation, expert: current_user_jwt, status: 'active', assigned_at: Time.current)
     end
@@ -49,7 +44,6 @@ class ExpertController < ApplicationController
       return
     end
 
-    conversation.reload
     if conversation.assigned_expert_id != current_user_jwt.id
       render json: {error: "You are not assigned to this conversation"}, status: :forbidden
       return
@@ -57,9 +51,7 @@ class ExpertController < ApplicationController
     ActiveRecord::Base.transaction do
       assignment = conversation.expert_assignments.find_by(expert_id: current_user_jwt.id, status: 'active')
       assignment&.update!(status: 'unassigned')
-      assignment.reload
       conversation.update!(assigned_expert_id: nil, status: 'waiting')
-      conversation.reload
     end
 
     render json: {success: true}, status: :ok
@@ -68,19 +60,16 @@ class ExpertController < ApplicationController
   # GET /expert/profile
   def get_profile
     profile = ExpertProfile.find_by(user_id: current_user_jwt.id)
-    profile.reload
     render json: {
       id: profile.id,
       bio: profile.bio,
       knowledgeBaseLinks: profile.knowledge_base_links.presence || []
     }
-    # render json: expert_profile_response(current_user_jwt.expert_profile)
   end
   
   # PUT /expert/profile
   def update_profile
     profile = ExpertProfile.find_by(user_id: current_user_jwt.id)
-    profile.reload
     if expert_profile_params.key?(:bio)
       profile.update(bio: expert_profile_params[:bio])
     end
@@ -97,24 +86,13 @@ class ExpertController < ApplicationController
     else
       render json: { errors: current_user_jwt.expert_profile.errors.full_messages }, status: :unprocessable_entity
     end
-
-
-    # if profile.update(expert_profile_params)
-    #   # render json: expert_profile_response(current_user_jwt.expert_profile)
-    #   render json: {
-    #     id: profile.id,
-    #     bio: profile.bio,
-    #     knowledgeBaseLinks: profile.knowledge_base_links.presence
-    #   }
-    # else
-    #   render json: { errors: current_user_jwt.expert_profile.errors.full_messages }, status: :unprocessable_entity
-    # end
   end
 
   # GET /expert/assignments/history
-
   def history
-    assignments = ExpertAssignment.where(expert_id: current_user_jwt.id).includes(conversation: :initiator).order(assigned_at: :desc)
+    assignments = ExpertAssignment.where(expert_id: current_user_jwt.id)
+                                  .includes(conversation: :initiator)
+                                  .order(assigned_at: :desc)
     render json: assignments.map { |assignment| assignment_response(assignment) }
   end
   
@@ -123,7 +101,7 @@ class ExpertController < ApplicationController
   private
   
   def require_expert_profile
-    profile = current_user_jwt.expert_profile.reload
+    profile = current_user_jwt.expert_profile
     unless profile
       render json: { error: 'Expert profile not found' }, status: :not_found
     end

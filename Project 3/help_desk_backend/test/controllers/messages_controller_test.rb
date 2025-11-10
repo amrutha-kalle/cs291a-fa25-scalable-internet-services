@@ -57,7 +57,7 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
     expert_token = JSON.parse(response.body)['token']
     expert_headers = { 'Authorization' => "Bearer #{expert_token}" }
 
-    get "/conversations/#{@conversation.id}/messages", headers: @expert_headers
+    get "/conversations/#{@conversation.id}/messages", headers: expert_headers
     
     assert_response :success
     body = JSON.parse(response.body)
@@ -132,7 +132,7 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
     assert_equal true, JSON.parse(response.body)["success"]
   end
 
-    test "should not mark own message as read" do
+  test "should not mark own message as read" do
     post '/messages',
       headers: { 'Authorization' => "Bearer #{@user_token}" },
       params: { 
