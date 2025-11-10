@@ -1,5 +1,5 @@
 class HealthController < ApplicationController
-  skip_before_action :authenticate_user, only: [:check]
+  # skip_before_action :authenticate_user, only: [:check]
 
   # GET /health
   def check

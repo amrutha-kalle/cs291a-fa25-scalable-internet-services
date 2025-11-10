@@ -1,16 +1,19 @@
 class MessagesController < ApplicationController
-
+  before_action :authorize_jwt!
+  
   # GET /conversations/:conversation_id/messages
   def index
     conversation = Conversation.find_by(id: params[:conversation_id])
+    
     unless conversation
       render json: {error: "Conversation not found"}, status: :not_found
       return
     end
-    # unless authorized_for_conversation?(conversation)
-    #   render json: {error: "Not authorized"}, status: :forbidden
-    #   return
-    # end
+    conversation.reload
+    unless authorized_for_conversation?(conversation)
+      render json: {error: "Not authorized"}, status: :forbidden
+      return
+    end
     messages = conversation.messages.ordered.includes(:sender)
     render json: messages.map{|message| message_response(message)}
   end
@@ -22,6 +25,7 @@ class MessagesController < ApplicationController
       render json: {error: "Conversation not found"}, status: :not_found
       return
     end
+    conversation.reload
     unless authorized_for_conversation?(conversation)
       render json: {error: "Not authorized"}, status: :forbidden
       return
@@ -35,7 +39,7 @@ class MessagesController < ApplicationController
 
     current_role = determine_sender_role(conversation)
 
-    message = Message.new(conversation: conversation, sender: current_user, sender_role: current_role, content: params[:content])
+    message = Message.new(conversation: conversation, sender: current_user_jwt, sender_role: current_role, content: params[:content])
 
     if message.save
       render json: message_response(message), status: :created
@@ -51,11 +55,12 @@ class MessagesController < ApplicationController
       render json: {error: "Message not found"}, status: :not_found
       return
     end
+    message.reload
     unless authorized_for_message?(message)
       render json: {error: 'Not authorized'}, status: :forbidden
       return
     end
-    if message.sender == current_user
+    if message.sender == current_user_jwt
       render json: {error: 'Cannot mark your own messages as read'}, status: :forbidden
       return
     end
@@ -64,6 +69,7 @@ class MessagesController < ApplicationController
       render json: {error: "Conversation not found"}, status: :not_found
       return
     end
+    conversation.reload
     unless authorized_for_conversation?(conversation)
       render json: {error: "No authorized"}, status: forbidden
       return
@@ -85,16 +91,23 @@ class MessagesController < ApplicationController
   end
 
   def authorized_for_conversation?(conversation)
-    conversation.initiator == current_user || conversation.assigned_expert == current_user
+    Rails.logger.info "Current_user id: #{current_user_jwt.id}"
+    Rails.logger.info "convo init id: #{conversation.initiator.id}"
+    if conversation.status == 'waiting'
+      Rails.logger.info "convo has no expert"
+    else
+      Rails.logger.info "convo expert id: #{conversation.assigned_expert.id}"
+    end
+    conversation.initiator == current_user_jwt || conversation.assigned_expert == current_user_jwt
   end
 
   def authorized_for_message?(message)
     conversation = message.conversation
-    conversation.initiator == current_user || conversation.assigned_expert == current_user
+    conversation.initiator == current_user_jwt || conversation.assigned_expert == current_user_jwt
   end
 
   def determine_sender_role(conversation)
-    current_user == conversation.initiator ? 'initiator' : 'expert'
+    current_user_jwt == conversation.initiator ? 'initiator' : 'expert'
   end
 
   def message_response(message)

@@ -1,7 +1,9 @@
 class ConversationsController < ApplicationController
     # GET /conversations
+    before_action :authorize_jwt!
+    
     def index
-        conversations = Conversation.for_user(current_user).includes(:initiator, :assigned_expert).order(created_at: :desc)
+        conversations = Conversation.for_user(current_user_jwt).includes(:initiator, :assigned_expert).order(created_at: :desc)
         render json: conversations.map{|conv| conversation_response(conv)}
     end
 
@@ -14,11 +16,11 @@ class ConversationsController < ApplicationController
             return
         end
         
-        unless conversation.initiator == current_user
+        unless conversation.initiator == current_user_jwt || conversation.assigned_expert == current_user_jwt
             render json: {error: 'Conversation not found'}, status: :not_found
             return
         end
-
+        conversation.reload
         render json: conversation_response(conversation)
         # conversation = Conversation.includes(:initiator, :assigned_expert).find(params[:id])
         # if conversation
@@ -31,7 +33,7 @@ class ConversationsController < ApplicationController
     # POST /conversations
     def create
         conversation = Conversation.new(conversation_params)
-        conversation.initiator = current_user
+        conversation.initiator = current_user_jwt
         conversation.last_message_at = Time.current
         
         if conversation.save
@@ -45,7 +47,7 @@ class ConversationsController < ApplicationController
     private
   
     def conversation_params
-        params.permit(:title)
+        params.require(:conversation).permit(:title)
     end
     
     def conversation_response(conversation)

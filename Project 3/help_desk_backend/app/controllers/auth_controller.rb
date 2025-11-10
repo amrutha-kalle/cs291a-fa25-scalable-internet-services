@@ -1,8 +1,8 @@
 class AuthController < ApplicationController
   # register and login don't need authentication
-  skip_before_action :authenticate_user, only: [:register, :login]
+  # skip_before_action :authenticate_user, only: [:register, :login, :refresh, :me]
   # refresh needs session only
-  before_action :require_session!, only: [:refresh]
+  before_action :authorize_session!, only: [:refresh, :me]
 
   # POST /auth/register
   def register
@@ -25,7 +25,7 @@ class AuthController < ApplicationController
   # POST /auth/login
   def login
     user = User.find_by(username: params[:username])
-    if user &.authenticate(params[:password])
+    if user&.authenticate(params[:password])
       user.update_column(:last_active_at, Time.current)
       session[:user_id] = user.id
       token = JwtService.encode(user)
@@ -48,17 +48,21 @@ class AuthController < ApplicationController
 
   # POST /auth/refresh
   def refresh
-    token = JwtService.encode(@current_user)
+    old_token = JwtService.encode(current_user_jwt)
+    puts "old token: #{old_token}"
+    token = JwtService.encode(current_user_session)
+    puts "new token: #{token}"
+    user.update_column(:last_active_at, Time.current)
     render json: {
-      user: user_json(@current_user),
+      user: user_json(current_user_session),
       token: token
     }, status: :ok
   end
 
   # GET /auth/me
   def me
-    if current_user
-      render json: user_json(current_user)
+    if current_user_session
+      render json: user_json(current_user_session)
     else
       render json: {error: 'No session found'}, status: :unauthorized
     end
