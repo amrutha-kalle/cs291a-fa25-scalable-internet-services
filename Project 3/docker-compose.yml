@@ -3,9 +3,6 @@ services:
     image: mysql:8.0
     environment:
       MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: rails_development
-      MYSQL_USER: rails_user
-      MYSQL_PASSWORD: password
     ports:
       - "3306:3306"
     volumes:
@@ -20,10 +17,10 @@ services:
       - "3000:3000"
     environment:
       - RAILS_ENV=development
-      - DATABASE_URL=mysql2://rails_user:password@db:3306/rails_development
+      - DATABASE_URL=mysql2://root:password@db:3306
       - SECRET_KEY_BASE=development_secret_key_base_that_is_very_long_and_secure_for_development_only
     volumes:
-      - .:/app
+      - ./help_desk_backend:/app
       - bundle_cache:/usr/local/bundle
     depends_on:
       - db
