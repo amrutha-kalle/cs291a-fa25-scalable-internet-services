@@ -42,19 +42,20 @@ export class ApiChatService implements ChatService {
     const token = this.tokenManager.getToken();
 
     // 3. Set up default headers including 'Content-Type': 'application/json'
-    const defaultHeaders = {
-      'Content-Type': 'application/json',
-      // 4. Add Authorization header with Bearer token if token exists
-      ...(token ? { 'Authorization': `Bearer ${token}` }: {}),
-    };
+    // const defaultHeaders = {
+    //   'Content-Type': 'application/json',
+    //   // 4. Add Authorization header with Bearer token if token exists
+    //   ...(token ? { 'Authorization': `Bearer ${token}` }: {}),
+    // };
 
     // 5. Make the fetch request with the provided options
     const request: RequestInit = {
+      ...options,
       headers: {
-        ...defaultHeaders,
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         ...options.headers,
       },
-      ...options
     };
     const response = await fetch(url, request);
     
@@ -71,11 +72,11 @@ export class ApiChatService implements ChatService {
       throw new Error(errorMessage);
     }
     // 7. Return the parsed JSON response
-    if (response.status === 204) {
-      return {} as T;
-    }
+    // if (response.status === 204) {
+    //   return {} as T;
+    // }
 
-    return response.json() as Promise<T>;
+    return response.json();
   }
 
   // Conversations
